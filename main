@@ -1,0 +1,280 @@
+import pygame
+from PIL import Image
+import os
+
+
+pygame.init()
+
+screen_width = 1700
+screen_height = 950
+screen = pygame.display.set_mode((screen_width, screen_height))
+pygame.display.set_caption("Main Menu")
+current = "menu"
+
+transsurface = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
+
+tranwhite = pygame.Color(255, 255, 255, 130)
+black = (0, 0, 0)
+white = (255, 255, 255)
+
+root = os.getcwd()
+
+clock = pygame.time.Clock()
+running = True
+mouse = pygame.mouse.get_pos()
+click = pygame.mouse.get_pressed()
+
+pygame.display.set_caption("project : recall")
+
+font = pygame.font.Font(r"C:\Users\ASUS\Desktop\pygame\necessary file\mad-hacker-font\MadHackerItalic-8EOz.ttf", 100)
+
+selected_char = None
+placed_characters = []
+
+charbutton = []
+countchar = {}
+
+
+
+def draw_text(text, font, color, surface, x, y):
+    text_obj = font.render(text, 1, color)
+    text_rect = text_obj.get_rect()
+    text_rect.center = (x, y)
+    surface.blit(text_obj, text_rect)
+
+def button(msg, x, y, w, h, ic, ac, k, action=None):
+
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+
+    smallText = pygame.font.Font(r"C:\Users\ASUS\Desktop\pygame\necessary file\blue-screen-font\BlueScreenPersonalUseRegular-0W1M9.ttf",  k)
+
+    if x+w > mouse[0] > x and y+h > mouse[1] > y:
+        pygame.draw.rect(screen, ac, (x, y, w, h))
+        text_color = white
+        if click[0] == 1 and action != None:
+            action()
+    else:
+        pygame.draw.rect(screen, ic, (x, y, w, h))
+        text_color = black
+
+    textSurf = smallText.render(msg, True, text_color)
+    textRect = textSurf.get_rect()
+    textRect.center = ((x+(w/2)), (y+(h/2)))
+    screen.blit(textSurf, textRect) 
+
+def charbut(char, x, y, w, h, ic, ac, action=None):
+
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+
+    smallText = pygame.font.Font(find_file(root, "prstart.ttf"),  30)
+    k = pygame.Rect(x, y, w, h)
+
+    if x+w > mouse[0] > x and y+h > mouse[1] > y:
+        pygame.draw.rect(screen, ac, (x, y, w, h))
+        text_color = white
+        charpath = find_file(root, char+ ".png")
+        charfile = pygame.image.load(charpath)
+        charpho = pygame.transform.scale(charfile,(250,300))
+        screen.blit(charpho, (x,50))
+        if click[0] == 1 and action != None:
+            action()
+
+    else:
+        pygame.draw.rect(screen, ic, (x, y, w, h))
+        text_color = black
+        
+      
+    textSurf = smallText.render(str(char), True, text_color)
+    textRect = textSurf.get_rect()
+    textRect.center = ((x+(w/2)), (y+(h/2)))
+    screen.blit(textSurf, textRect)
+    return k
+
+
+
+def grid():
+    global gridpo
+    size = 40
+    space = 5
+    gridpo = []
+    transsurface.fill((0, 0, 0, 0))
+
+    for x in range(0,20):
+        gridpo.append([])
+        for y in range(0,20):
+            rect = pygame.Rect((x*(size+space))+400,(y*(size+space))+25,size,size)
+            pygame.draw.rect(transsurface, tranwhite ,rect)
+            gridpo[x].append(rect)
+    screen.blit(transsurface, (0, 0))
+
+def find_file(start_path, file_name):
+    for dirpath, dirnames, filenames in os.walk(start_path):
+        if file_name in filenames:
+            return os.path.join(dirpath, file_name)
+    return None
+
+def select_char(charac):
+    global selected_char
+    selected_char = charac
+    if selected_char not in countchar:
+        countchar[selected_char] = 0
+
+def place_char(selected_char):
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+    range1 = range(7)
+    range2 = range(14, 20)
+    prepare_range = set(range1).union(set(range2))
+    if selected_char and click[0] == 1 and countchar[selected_char] < 1:
+        for x in range(20):
+            for y in prepare_range:
+                if gridpo[x][y].collidepoint(mouse):
+                    picpath = find_file(root, str(selected_char) + ".png")
+                    if picpath != None:
+                        placed_characters.append((selected_char, gridpo[x][y].x, gridpo[x][y].y))
+                        countchar[selected_char] += 1
+                    break
+
+def del_char(selected_char):
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+    if selected_char and click[2] == 1 and countchar[selected_char] >= 1:
+        for x in range(20):
+            for y in range(20):
+                if gridpo[x][y].collidepoint(mouse):
+                    picpath = find_file(root, str(selected_char) + ".png")
+                    if picpath != None:
+                        if (selected_char, gridpo[x][y].x, gridpo[x][y].y) in placed_characters:
+                            placed_characters.remove((selected_char, gridpo[x][y].x, gridpo[x][y].y))
+                            countchar[selected_char] -= 1
+                        else:
+                            pass    
+                    break
+                
+character_images = {}
+for char in ['khan', 'oda', 'leonidus', 'alexander', 'caesar']:
+    path = find_file(root, f"{char}.png")
+    if path:
+        character_images[char] = pygame.transform.scale(pygame.image.load(path), (40, 40))
+   
+def returnmenu():
+    global current
+    current = "menu"
+    
+    
+def game():
+    global selected_char, mouse, click, current
+    current = "game"
+    while True:
+        print(current)
+        clock.tick(120)
+        file_path = find_file(root, "3200146.jpg")
+        file = pygame.image.load(file_path)
+        background = pygame.transform.scale(file,(screen_width,screen_height))
+        screen.blit(background, (0, 0))
+        button("battle", 150, 10, 100, 30, white, black,30, battle)
+        button("back", 1450, 10, 100, 30, white, black,30, returnmenu)
+        grid()
+        
+        for char, x, y in placed_characters:
+            if char in character_images:
+                screen.blit(character_images[char], (x, y))
+
+        rect = pygame.Rect(75,50,250,300)
+        pygame.draw.rect(screen, white ,rect)
+        deck1 = {"khan":"khan","oda":"oda","leonidus":"leonidus"}
+        charac_space = 400
+        for charac in deck1:
+            deck1[charac] = charbut(str(charac), 75, charac_space , 250 , 30, white, black, lambda charac=charac: select_char(charac))
+            charac_space += 50
+            charbutton.append(f"{deck1[charac]}")
+
+        rect = pygame.Rect(1375,50,250,300)
+        pygame.draw.rect(screen, white ,rect)
+        deck2 = {"alexander":"alexander" , "caesar":"caesar"}
+        charac_space = 400
+        for charac in deck2:
+            deck2[charac] = charbut(str(charac), 1375, charac_space , 250 , 30, white, black, lambda charac=charac: select_char(charac))
+            charac_space += 50
+            charbutton.append(f"{deck2[charac]}")
+
+        for char, x, y in placed_characters:
+            if char in character_images:
+                screen.blit(character_images[char], (x, y))
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    place_char(selected_char)
+                elif event.button == 3:
+                    del_char(selected_char)
+                
+
+def battle():
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+        clock.tick(120)
+        screen.fill(black) 
+        pygame.display.flip()
+
+
+def collection():
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+        clock.tick(120)
+        screen.fill(black) 
+        pygame.display.flip()
+
+
+def gacha():
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+        clock.tick(120)
+        screen.fill(black) 
+        pygame.display.flip()
+
+
+def quit_game():
+    pygame.quit()
+    quit()
+
+
+while running:
+    if current == "menu":
+        frame_index = 0
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+    
+        file_path = find_file(root, "3200146.jpg")
+        file = pygame.image.load(file_path)
+        background = pygame.transform.scale(file, (screen_width, screen_height))
+        screen.blit(background, (0, 0))
+
+        draw_text("Project: recall", font, white, screen, screen_width/2, 100)
+
+        button("Play", (screen_width/2)-150, 250, 300, 100, white, black, 45, game)
+        button("Gacha", (screen_width/2)-150, 375, 300, 100, white, black, 45, gacha)
+        button("Deck", (screen_width/2)-150, 500, 300, 100, white, black, 45,collection)
+        button("Quit", (screen_width/2)-150, 750, 300, 100, white, black, 45, quit_game)
+    
+        pygame.display.update()
+        clock.tick(120)
+
