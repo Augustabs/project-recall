@@ -145,29 +145,45 @@ class Grid:
         self.grid_height = self.row * (self.size + self.gap) + self.gap
 
         self.grid_surface = pygame.Surface((self.grid_width, self.grid_height), pygame.SRCALPHA)
+        self.grid_surface.fill((0, 0, 0, 0))
 
     def create_grid(self):
         for x in range(self.column):
-            row = []
+            column = []
             for y in range(self.row):
-                rect = pygame.Rect((x * (self.size + self.gap)), (y * (self.size + self.gap)), self.size, self.size)
-                row.append(rect)
-            self.grid.append(row)
+                rect = pygame.Rect(x * (self.size + self.gap), y * (self.size + self.gap), self.size, self.size)
+                cell = {'rect': rect,'color': (255, 255, 255, 130)}
+                column.append(cell)
+            self.grid.append(column)
 
     def draw(self):
-        self.grid_surface.fill((0, 0, 0, 0))
-        for row in self.grid:
-            for rect in row:
-                pygame.draw.rect(self.grid_surface, pygame.Color(255, 255, 255, 130), rect)
+
+        for x in range(self.column):
+            for y in range(self.row):
+                cell = self.grid[x][y]
+                color = cell['color']
+                rect = cell['rect']
+                pygame.draw.rect(self.grid_surface, color, rect)
+
         screen.blit(self.grid_surface, (400, 25))
 
     def get_cell_at_pos(self, pos):
         adpos = (pos[0]-400,pos[1]-25)
         for x in range(self.column):
             for y in range(self.row):
-                if self.grid[x][y].collidepoint(adpos):
+                if self.grid[x][y]["rect"].collidepoint(adpos):
                     return x, y
         return None
+
+    def highlight_cell(self, x, y, color=(0, 255, 0, 150)):
+        if 0 <= x < self.column and 0 <= y < self.row:
+            self.grid[x][y]['color'] = color
+    
+    def reset_highlights(self):
+        for row in self.grid:
+            for cell in row:
+                cell['color'] = (255, 255, 255, 130)
+        
 
 
 class Game:
@@ -208,10 +224,9 @@ class Game:
     def select_pic(self,pos):
         if self.current_state == "battle":
             for char in self.placed_characters:
-                char_rect = pygame.Rect(char.x * (self.grid.size + self.grid.gap) + 400,char.y * (self.grid.size + self.grid.gap) + 25,char.image.get_width(),char.image.get_height())
-                if char_rect.collidepoint(pos):
+                self.char_rect = pygame.Rect(char.x * (self.grid.size + self.grid.gap) + 400,char.y * (self.grid.size + self.grid.gap) + 25,char.image.get_width(),char.image.get_height())
+                if self.char_rect.collidepoint(pos): 
                     self.selected_pic = char.name
-                    print(f"Character {self.selected_pic} selected.")  # Debugging line
                     break
 
     def place_char(self, pos):
@@ -266,6 +281,7 @@ class Game:
                     elif event.button == 3: 
                         if self.current_state == "game":
                             self.remove_char(pygame.mouse.get_pos())
+                            
 
     def draw_menu(self):
         background = self.background_images.get("mainback") 
@@ -320,7 +336,6 @@ class Game:
         screen.blit(textSurf, textRect)
 
     def stat_show(self, x, y, w, h, k, selected_character):
-        print(f"Displaying stats for {selected_character.name}")
 
         smallText = pygame.font.Font(r"C:\Users\ASUS\Desktop\pygame\necessary file\blue-screen-font\BlueScreenPersonalUseRegular-0W1M9.ttf", k)
 
@@ -355,6 +370,22 @@ class Game:
 
         self.rect2 = pygame.Rect(1375,50,250,300)
         screen.blit(semi,self.rect2)
+    
+    
+        
+    def highlight_movement_range(self, name, move_x, move_y):
+        self.grid.reset_highlights()
+        for char in self.placed_characters:
+            if char.name == name:
+                base_x, base_y = char.x, char.y
+                break
+        else:
+            return
+
+        for dx in range(-move_x, move_x + 1):
+            for dy in range(-move_y, move_y + 1):
+                if 0 <= base_x + dx < self.grid.column and 0 <= base_y + dy < self.grid.row:
+                    self.grid.highlight_cell(base_x + dx, base_y + dy)
 
     def start_menu(self):
         self.current_state = "menu"
@@ -384,7 +415,7 @@ class Game:
         self.draw_deck()
         self.create_button("battle", 150, 10, 100, 30, (255,255,255), (0,0,0), 30, self.start_battle)
         self.create_button("back", 1450, 10, 100, 30, (255,255,255), (0,0,0), 30, self.start_menu)
-
+        
     def draw_deck(self):
         deck1 = {"Genghis Khan": "Genghis Khan", "oda": "oda", "leonidus": "leonidus"}
         charac_space = 400
@@ -409,18 +440,25 @@ class Game:
     def draw_battle(self):
         background = self.background_images.get("mainback") 
         screen.blit(background, (0, 0))
+        self.window()
         self.grid.draw()
         self.draw()
-        if self.selected_pic:  
-            selected_character = char_dict_all.get(self.selected_pic)
-            if selected_character:  
-                print(f"Displaying stats for {selected_character.name}")
-                self.stat_show(75, 10, 200, 200, 20, selected_character) 
-                selected_char_image = self.character_images.get(self.selected_pic)
-                if selected_char_image:
-                    screen.blit(selected_char_image.image, (250, 300))
 
-        pygame.display.update()
+        if self.selected_pic:
+            self.grid.reset_highlights()
+            selected_character = char_dict_all.get(self.selected_pic)
+            image = self.character_images.get(self.selected_pic)
+            if selected_character:
+                scaled_image = pygame.transform.scale(image.ori_image, (250, 300))
+                if scaled_image:
+                    deck1 = {"Genghis Khan": "Genghis Khan", "oda": "oda", "leonidus": "leonidus"}
+                    deck2 = {"alexander": "alexander", "caesar": "caesar"} 
+                    if self.selected_pic in deck1:
+                        self.highlight_movement_range(self.selected_pic,2,2) 
+                        screen.blit(scaled_image, (75, 50))
+                        self.stat_show(100, 400, 200, 200, 20, selected_character)
+
+        pygame.display.update()                 
 
 
 game = Game()
