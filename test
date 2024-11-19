@@ -1,19 +1,9 @@
 import pygame
 import os
-import random
+
 
 pygame.init()
 
-good_banner_image_path = os.path.join('game files', 'Banner', 'Banner Gacha', 'Banner.zip - Legendary Gacha_Banner.png')
-bad_banner_image_path = os.path.join('game files', 'Banner', 'Banner Gacha', 'Banner.zip - Epic Gacha_Banner.png')
-
-good_banner_image = pygame.image.load(good_banner_image_path)
-bad_banner_image = pygame.image.load(bad_banner_image_path)
-
-white = (255, 255, 255)
-black = (0, 0, 0)
-gray = (169, 169, 169)
-hover_color = (100, 100, 100)
 
 screen_width = 1700
 screen_height = 950
@@ -211,48 +201,10 @@ class Grid:
                 cell = self.grid[x][y]
                 cell['color'] = (255, 255, 255, 130)
         
-class InputBox:
-    def __init__(self, x, y, w, h, text=''):
-        self.rect = pygame.Rect(x, y, w, h)
-        self.color = gray
-        self.text = text
-        self.txt_surface = font.render(text, True, self.color)
-        self.active = False
-
-    def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            # If the user clicked on the input_box rect.
-            if self.rect.collidepoint(event.pos):
-                # Toggle the active variable.
-                self.active = not self.active
-            else:
-                self.active = False
-            # Change the current color of the input box.
-            self.color = white if self.active else gray
-        if event.type == pygame.KEYDOWN:
-            if self.active:
-                if event.key == pygame.K_RETURN:
-                    return self.text
-                elif event.key == pygame.K_BACKSPACE:
-                    self.text = self.text[:-1]
-                else:
-                    self.text += event.unicode
-                # Re-render the text.
-                self.txt_surface = font.render(self.text, True, self.color)
-        return None
-
-    def draw(self, screen):
-        # Blit the text.
-        screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
-        # Blit the rect.
-        pygame.draw.rect(screen, self.color, self.rect, 2)
-
 
 class Game:
     def __init__(self):
         self.current_state = "menu"
-        self.selected_rarity = "Common"
-        self.player_deck = []
         self.turn = 0
         self.selected_char = None
         self.selected_pic = None
